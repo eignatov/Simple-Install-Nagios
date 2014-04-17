@@ -24,10 +24,11 @@ Installation
 ------------
 
 1) Télécharger le fichier sin-setup.sh depuis les serveurs Openology.net
+<br>
 wget http://download.openology.net/project/sinagios/sin-setup.sh
 
-2) Rendez le script exécutable
+2) Rendez le script exécutable<br>
 chmod +x sin-setup.sh
 
-3) Lancez le script et laissez-vous guider
+3) Lancez le script et laissez-vous guider<br>
 ./sin-setup.sh
