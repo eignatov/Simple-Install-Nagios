@@ -23,8 +23,7 @@ Ce script installe les logiciels suivants:
 Installation
 ------------
 
-1) Télécharger le fichier sin-setup.sh depuis les serveurs Openology.net
-<br>
+1) Télécharger le fichier sin-setup.sh depuis les serveurs Openology.net<br>
 wget http://download.openology.net/project/sinagios/sin-setup.sh
 
 2) Rendez le script exécutable<br>

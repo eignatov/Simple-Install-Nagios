@@ -51,102 +51,72 @@ if [ $(grep -c "^nagios:" /etc/passwd) -eq 0 ]
 /usr/sbin/usermod -G nagios,nagcmd apache
 
 # Starting basic services
-
 /etc/init.d/httpd start
 /etc/init.d/mysqld start
-/sbin/chkconfig --level 35 httpd on
-/sbin/chkconfig --level 35 mysqld on
 
-#
 # Configure ROOT MySQL Password
-#
+mysqladmin -u root password sinadmin
 
-mysqladmin -u root password sindbadmin
-
-
-#
 #Install Nagios
-#
-
 cd /usr/local/src/
-
 archive_nagios="nagios-$nagios_version.tar.gz"
 if [ ! -f $archive_nagios ]
-then
-	wget http://download.openology.net/project/si-nagios/sources/$archive_nagios
-fi
-
-tar xvzf $archive_nagios
+	then
+		wget http://download.openology.net/project/sinagios/sources/$archive_nagios
+	fi
+if [ ! -f $nagios_patch ]
+	then
+		wget http://download.openology.net/project/sinagios/sources/$nagios_patch
+	fi
+tar xzf $archive_nagios
 cd nagios-$nagios_version/
-./configure --prefix=/usr/local/nagios --with-nagios-user=nagios --with-nagios-group=nagios --with-command-user=nagios --with-command-group=nagcmd --enable-event-broker --enable-nanosleep --enable-embedded-perl --with-perlcache
+patch -p1 -N < /usr/local/src/bogus_warnings.patch
+./configure --prefix=/usr/local/nagios --with-command-group=nagcmd --enable-nanosleep --enable-event-broker
 make all install install-init install-commandmode install-config install-webconf
-htpasswd -c /usr/local/nagios/etc/htpasswd.users sinadmin
-/etc/init.d/httpd reload
+htpasswd -cb /usr/local/nagios/etc/htpasswd.users nagiosadmin nagiosadmin
 
-
-#
 #Install Nagios plugins
-#
-
 cd /usr/local/src/
 archive_nagios_plugins="nagios-plugins-$nagios_plugins_version.tar.gz"
 if [ ! -f $archive_nagios_plugins ]
-then
-	wget http://download.openology.net/project/si-nagios/sources/$archive_nagios_plugins
-fi
-	
-tar xvzf $archive_nagios_plugins 
+	then
+		wget http://download.openology.net/project/sinagios/sources/$archive_nagios_plugins
+	fi
+tar xzf $archive_nagios_plugins 
 cd nagios-plugins-$nagios_plugins_version/
-./configure --with-nagios-user=nagios --with-nagios-group=nagios --with-command-user=nagios --with-command-group=nagcmd --prefix=/usr/local/nagios
+./configure --with-nagios-user=nagios --with-nagios-group=nagios --with-openssl=/usr/bin/openssl
 make
 make install
 
-#
-# Install NRPE
-#
-
+## Install NRPE
 cd /usr/local/src/
 archive_nrpe="nrpe-$nrpe_version.tar.gz"
 if [ ! -f $archive_nrpe ]
-then
-	wget http://download.openology.net/project/si-nagios/sources/$archive_nrpe
-fi
-
-tar xvzf $archive_nrpe
-chmod 755 -R nrpe-$nrpe_version
+	then
+		wget http://download.openology.net/project/sinagios/sources/$archive_nrpe
+	fi
+tar xzf $archive_nrpe
 cd nrpe-$nrpe_version/
-./configure --enable-ssl --with-ssl 
+./configure --with-ssl=/usr/bin/openssl --with-ssl-lib=/usr/lib/x86_64-linux-gnu
 make all
 make install
-cp init-script.suse /etc/init.d/nrpe
+cp init-script.debian /etc/init.d/nrpe
 chmod a+rx /etc/init.d/nrpe
 cp sample-config/nrpe.cfg /usr/local/nagios/etc/
 
-
-#
 #Install NDO
-#
-
 cd /usr/local/src/
 archive_ndoutils="ndoutils-$ndoutils_version.tar.gz"
 if [ ! -f $archive_ndoutils ]
-then
-	wget http://download.openology.net/project/si-nagios/sources/$archive_ndoutils
-fi
-tar xvzf $archive_ndoutils 
-
-#
-# Installation du patch
-#
-
+	then
+		wget http://download.openology.net/project/sinagios/sources/$archive_ndoutils
+	fi
+tar xzf $archive_ndoutils 
 cd ndoutils-$ndoutils_version
-wget http://download.tech-max.fr/nagios/common/setup_files/ndoutils${ndoutils_version}_light.patch
-patch -p1 -N < ndoutils${ndoutils_version}_light.patch
-./configure --prefix=/usr/local/nagios/ --enable-mysql --disable-pgsql \
-   --with-ndo2db-user=nagios --with-ndo2db-group=nagios
+./configure --prefix=/usr/local/nagios/ --enable-mysql --disable-pgsql --with-ndo2db-user=nagios --with-ndo2db-group=nagios
 make
-cp ./src/ndomod-3x.o /usr/local/nagios/bin/ndomod.o
-cp ./src/ndo2db-3x /usr/local/nagios/bin/ndo2db
+cp ./src/ndomod-4x.o /usr/local/nagios/bin/ndomod.o
+cp ./src/ndo2db-4x /usr/local/nagios/bin/ndo2db
 cp ./config/ndo2db.cfg-sample /usr/local/nagios/etc/ndo2db.cfg
 cp ./config/ndomod.cfg-sample /usr/local/nagios/etc/ndomod.cfg
 chmod 770 /usr/local/nagios/bin/ndo*
@@ -154,47 +124,20 @@ chown nagios:nagios /usr/local/nagios/bin/ndo*
 cp ./daemon-init /etc/init.d/ndo2db
 chmod +x /etc/init.d/ndo2db
 
-#
 # Install Centreon
-#
-
 cd /usr/local/src/
-wget http://download.tech-max.fr/nagios/common/setup_files/centreon-$centreon_version.tar.gz
-wget http://download.tech-max.fr/nagios/CentOS/centos.si
-tar xvzf centreon-$centreon_version.tar.gz
+archive_centreon="centreon-$centreon_version.tar.gz"
+if [ ! -f $archive_centreon ]
+	then
+	wget http://download.openology.net/project/sinagios/sources/centreon-$centreon_version.tar.gz
+	fi
+tar xzf centreon-$centreon_version.tar.gz
 cd centreon-$centreon_version/
-export PATH="$PATH:/usr/local/nagios/bin/"
-./install.sh -f /usr/local/src/centos.si
-/etc/init.d/httpd reload
+./install.sh -i
 
-#
-# Langue Centreon
-#
-
-# En toute rigueur il faudrait faire locale=$LANG mais on n'est pas sûr de trouver toutes
-# les langues sur http://download.tech-max.fr/
-
-lang="fr_FR"
-locale="$lang.UTF-8"
-centreon_lang_version="2.1-$lang-1"
-
-mkdir -p /usr/local/centreon/www/locale/$locale/LC_MESSAGES/
-cd /usr/local/src/
-archive_nagios_lang="centreon-$centreon_lang_version.tgz"
-if [ ! -f $archive_nagios_lang ]
-then
-	wget http://download.tech-max.fr/nagios/common/setup_files/$archive_nagios_lang
-fi
-tar xvzf $archive_nagios_lang 
-#cd centreon-$centreon_lang_version/LC_MESSAGES
-cd centreon-$centreon_lang_version.1/LC_MESSAGES
-cp messages.mo /usr/local/centreon/www/locale/$locale/LC_MESSAGES/messages.mo
-read -p "Se connecter à http://Ip/centreon, suivre les étapes de configuration de l'interface Centreon et à la fin appuyer sur une touche pour finaliser..."
-
-#
-# Ajout des services ndo2db, nagios, nrpe, snmp 
-#
-
+# Post-Install configuration
+/sbin/chkconfig --level 35 httpd on
+/sbin/chkconfig --level 35 mysqld on
 /sbin/chkconfig --level 35 snmpd on
 /sbin/chkconfig --level 35 snmptrapd on
 /sbin/chkconfig --level 35 ndo2db on
@@ -203,15 +146,16 @@ read -p "Se connecter à http://Ip/centreon, suivre les étapes de configuration
 /sbin/chkconfig --level 01246 nagios off
 /sbin/chkconfig --level 35 nrpe on
 /sbin/chkconfig --level 01246 nrpe off
-/etc/init.d/ndo2db start
-/etc/init.d/nagios start
-/etc/init.d/nrpe start
+/etc/init.d/httpd restart
+sed 's/\[mysqld\]/[mysqld]\ninnodb_file_per_table=1/' /etc/mysql/my.cnf
+service mysqld restart
+service ndo2db start
+service nagios start
+service nrpe start
 
-#
-# On vérifie que tout est OK
-#
-
-if [ $(grep -c "ndomod" /usr/local/nagios/var/nagios.log) -ne 0 ]
-then
-	grep ndomod /usr/local/nagios/var/nagios.log
+ Check everything is OK
+if [ $(grep -c "ndomod: Could not open data sink\!" /usr/local/nagios/var/nagios.log) -ne 0 ]
+	then
+		grep ndomod /usr/local/nagios/var/nagios.log
 fi
+read -p "Se connecter à http://Ip/centreon, suivre les étapes de configuration de l'interface Centreon et à la fin appuyer sur une touche pour finaliser..."
