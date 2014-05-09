@@ -25,16 +25,28 @@ if [ $(grep -c "^nagcmd:" /etc/group) -eq 0 ]
 	then
 		groupadd nagcmd
 	fi
-
+# Create nagios group
 if [ $(grep -c "^nagios:" /etc/group) -eq 0 ]
 	then
 		groupadd nagios
 	fi
 
-# Create nagios user and group
+# Create centreon group
+if [ $(grep -c "^centreon:" /etc/group) -eq 0 ]
+	then
+		groupadd centreon
+	fi
+
+# Create nagios user
 if [ $(grep -c "^nagios:" /etc/passwd) -eq 0 ]
 	then
 		useradd --home /usr/local/nagios --gid nagios --groups nagcmd  nagios
+	fi
+	
+# Create centreon user
+if [ $(grep -c "^centreon:" /etc/passwd) -eq 0 ]
+	then
+		useradd --home /var/lib/centreon --gid centreon --groups centreon centreon
 	fi
 
 #Adding www-data user to nagios and nagcmd groups

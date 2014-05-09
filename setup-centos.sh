@@ -41,10 +41,22 @@ if [ $(grep -c "^nagios:" /etc/group) -eq 0 ]
 		groupadd nagios
 	fi
 
+# Create centreon group
+if [ $(grep -c "^centreon:" /etc/group) -eq 0 ]
+	then
+		groupadd centreon
+	fi
+
 # Create nagios user
 if [ $(grep -c "^nagios:" /etc/passwd) -eq 0 ]
 	then
 		useradd --home /usr/local/nagios --gid nagios --groups nagcmd  nagios
+	fi
+	
+# Create centreon user
+if [ $(grep -c "^centreon:" /etc/passwd) -eq 0 ]
+	then
+		useradd --home /var/lib/centreon --gid centreon --groups centreon centreon
 	fi
 
 #Adding apache user to nagios and nagcmd groups
@@ -153,7 +165,7 @@ service ndo2db start
 service nagios start
 service nrpe start
 
- Check everything is OK
+# Check everything is OK
 if [ $(grep -c "ndomod: Could not open data sink\!" /usr/local/nagios/var/nagios.log) -ne 0 ]
 	then
 		grep ndomod /usr/local/nagios/var/nagios.log
