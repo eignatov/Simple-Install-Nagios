@@ -12,6 +12,7 @@ package_list="mailutils build-essential sudo apache2 apache2-mpm-prefork php5 ph
 package_pear_list="SOAP Validate XML_RPC2 XML_RPC DB DB_DataObject DB_DataObject_FormBuilder Archive_Tar Archive_Zip Auth_SASL Auth_SASL2 Console_GetoptPlus Date HTML_Common2 HTML_QuickForm2 HTML_QuickForm_advmultiselect HTML_Table HTTP_Request2 Image_GraphViz Log MDB2 Net_Ping Net_SMTP Net_Socket Net_Traceroute Net_URL2 Structures_Graph"
 
 # Dependencies installation
+aptitude update
 aptitude install -y $package_list
 
 # PHP-PEAR Update
@@ -126,16 +127,22 @@ if [ ! -f $archive_centreon ]
 	then
 	wget http://download.openology.net/project/sinagios/sources/centreon-$centreon_version.tar.gz
 	fi
+if [ ! -f cent-debian.tpl ]
+    then
+    wget http://download.openology.net/project/sinagios/os/cent-debian.tpl
+    fi
 tar xzf centreon-$centreon_version.tar.gz
 cd centreon-$centreon_version/
-./install.sh -i
+./install.sh -f /usr/local/src/cent-debian.tpl
+
 
 # Post-Install configuration
 update-rc.d ndo2db defaults
 update-rc.d nagios defaults
 update-rc.d nrpe defaults
 service apache2 restart
-sed 's/\[mysqld\]/[mysqld]\ninnodb_file_per_table=1/' /etc/mysql/my.cnf
+sed 's/\[mysqld\]/[mysqld]\ninnodb_file_per_table=1/' /etc/mysql/my.cnf > /tmp/my.tmp
+mv /tmp/my.tmp /etc/mysql/my.cnf
 service mysql restart
 service ndo2db start
 service nagios start
