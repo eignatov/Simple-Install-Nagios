@@ -7,8 +7,7 @@ de logiciels NAGIOS/CENTREON.
 Ce script peut s'installer sur les distributions suivantes:
 
 - Ubuntu 12.04
-- Ubuntu 14.04
-- Debian 7.0
+- Debian 6
 - CentOS 6.4
 - CentOS 6.5
 
