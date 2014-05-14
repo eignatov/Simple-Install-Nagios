@@ -124,17 +124,18 @@ cp ./config/ndomod.cfg-sample /usr/local/nagios/etc/ndomod.cfg
 chown nagios:nagios /usr/local/nagios/bin/ndo*
 chown nagios:nagios /usr/local/nagios/etc/ndo*
 chmod 774 /usr/local/nagios/bin/ndo*
+cp ./daemon-init /etc/init.d/ndo2db
+chmod +x /etc/init.d/ndo2db
 mysqladmin -u root -psinadmin create ndo
 mysql -u root -psinadmin mysql < /usr/local/src/ndopreinst.sql
-/db/installdb -u ndo -p sinadmin -h localhost -d ndo
+cd db
+./installdb -u ndo -p sinadmin -h localhost -d ndo
 sed 's/db_name=nagios/db_name=ndo/g' /usr/local/nagios/etc/ndo2db.cfg > /tmp/ndo2db.cfg
 mv /tmp/ndo2db.cfg /usr/local/nagios/etc/ndo2db.cfg
 sed 's/db_user=ndouser/db_user=ndo/g' /usr/local/nagios/etc/ndo2db.cfg > /tmp/ndo2db.cfg
 mv /tmp/ndo2db.cfg /usr/local/nagios/etc/ndo2db.cfg
 sed 's/db_pass=ndopassword/db_pass=sinadmin/g' /usr/local/nagios/etc/ndo2db.cfg > /tmp/ndo2db.cfg
 mv /tmp/ndo2db.cfg /usr/local/nagios/etc/ndo2db.cfg
-cp ./daemon-init /etc/init.d/ndo2db
-chmod +x /etc/init.d/ndo2db
 
 # Install Centreon
 cd /usr/local/src/
@@ -157,7 +158,8 @@ update-rc.d ndo2db defaults
 update-rc.d nagios defaults
 update-rc.d nrpe defaults
 service apache2 restart
-sed 's/\[mysqld\]/[mysqld]\ninnodb_file_per_table=1/' /etc/mysql/my.cnf > /etc/mysql/my.cnf
+sed 's/\[mysqld\]/[mysqld]\ninnodb_file_per_table=1/' /etc/mysql/my.cnf > /tmp/my.cnf
+mv /tmp/my.cnf /etc/mysql/my.cnf
 service mysql restart
 service ndo2db start
 service nagios start
