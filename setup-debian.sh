@@ -13,6 +13,8 @@ package_pear_list="SOAP Validate XML_RPC2 XML_RPC DB DB_DataObject DB_DataObject
 
 # Dependencies installation
 aptitude update
+debconf-set-selections <<< 'mysql-server mysql-server/root_password password sinadmin'
+debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password sinadmin'
 aptitude install -y $package_list
 
 # PHP-PEAR Update
@@ -107,6 +109,10 @@ if [ ! -f $archive_ndoutils ]
 	then
 		wget http://download.openology.net/project/sinagios/sources/$archive_ndoutils
 	fi
+if [ ! -f ndopreinst.sql ]
+	then
+		wget http://download.openology.net/project/sinagios/sources/ndopreinst.sql
+	fi
 tar xzf $archive_ndoutils 
 cd ndoutils-$ndoutils_version
 ./configure --prefix=/usr/local/nagios/ --enable-mysql --disable-pgsql --with-ndo2db-user=nagios --with-ndo2db-group=nagios
@@ -115,8 +121,18 @@ cp ./src/ndomod-4x.o /usr/local/nagios/bin/ndomod.o
 cp ./src/ndo2db-4x /usr/local/nagios/bin/ndo2db
 cp ./config/ndo2db.cfg-sample /usr/local/nagios/etc/ndo2db.cfg
 cp ./config/ndomod.cfg-sample /usr/local/nagios/etc/ndomod.cfg
-chmod 770 /usr/local/nagios/bin/ndo*
 chown nagios:nagios /usr/local/nagios/bin/ndo*
+chown nagios:nagios /usr/local/nagios/etc/ndo*
+chmod 774 /usr/local/nagios/bin/ndo*
+mysqladmin -u root -psinadmin create ndo
+mysql -u root -psinadmin mysql < /usr/local/src/ndopreinst.sql
+/db/installdb -u ndo -p sinadmin -h localhost -d ndo
+sed 's/db_name=nagios/db_name=ndo/g' /usr/local/nagios/etc/ndo2db.cfg > /tmp/ndo2db.cfg
+mv /tmp/ndo2db.cfg /usr/local/nagios/etc/ndo2db.cfg
+sed 's/db_user=ndouser/db_user=ndo/g' /usr/local/nagios/etc/ndo2db.cfg > /tmp/ndo2db.cfg
+mv /tmp/ndo2db.cfg /usr/local/nagios/etc/ndo2db.cfg
+sed 's/db_pass=ndopassword/db_pass=sinadmin/g' /usr/local/nagios/etc/ndo2db.cfg > /tmp/ndo2db.cfg
+mv /tmp/ndo2db.cfg /usr/local/nagios/etc/ndo2db.cfg
 cp ./daemon-init /etc/init.d/ndo2db
 chmod +x /etc/init.d/ndo2db
 
@@ -141,8 +157,7 @@ update-rc.d ndo2db defaults
 update-rc.d nagios defaults
 update-rc.d nrpe defaults
 service apache2 restart
-sed 's/\[mysqld\]/[mysqld]\ninnodb_file_per_table=1/' /etc/mysql/my.cnf > /tmp/my.tmp
-mv /tmp/my.tmp /etc/mysql/my.cnf
+sed 's/\[mysqld\]/[mysqld]\ninnodb_file_per_table=1/' /etc/mysql/my.cnf > /etc/mysql/my.cnf
 service mysql restart
 service ndo2db start
 service nagios start
